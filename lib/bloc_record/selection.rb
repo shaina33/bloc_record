@@ -232,7 +232,7 @@ module Selection
             when Symbol
                 rows = connection.execute <<-SQL
                     SELECT * FROM #{table}
-                    INNER JOIN #{arg} ON #{arg}.#{table}_id = #{table}.id
+                    INNER JOIN #{args.first} ON #{args.first}.#{table}_id = #{table}.id
                 SQL
             end
         end
