@@ -234,6 +234,13 @@ module Selection
                     SELECT * FROM #{table}
                     INNER JOIN #{args.first} ON #{args.first}.#{table}_id = #{table}.id
                 SQL
+            when Hash # assignment 4
+                joins_hash = BlocRecord::Utility.convert_keys(args.first)
+                joins = joins_hash.map {|key, value| "INNER JOIN #{key} ON #{key}.#{table}_id = #{table}.id INNER JOIN #{value} ON #{value}.#{key}_id = #{key}.id" }
+                rows = connection.execute <<-SQL
+                    SELECT * FROM #{table}
+                    #{joins}
+                SQL
             end
         end
         rows_to_array(rows)
