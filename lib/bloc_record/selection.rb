@@ -32,13 +32,13 @@ module Selection
         end
     end
     
-    def find_by(attribute, value)
-        row = connection.get_first_row <<-SQL
-            SELECT #{column.join ","} FROM #{table}
-            WHERE #{attribute} = #{BlocRecord::Utility.sql_strings(value)};
-        SQL
-        init_object_from_row(row)
-    end
+    # def find_by(attribute, value)
+    #     row = connection.get_first_row <<-SQL
+    #         SELECT #{column.join ","} FROM #{table}
+    #         WHERE #{attribute} = #{BlocRecord::Utility.sql_strings(value)};
+    #     SQL
+    #     init_object_from_row(row)
+    # end
     
     def take(num=1)
         if !check_integer(num, 1)
@@ -92,17 +92,25 @@ module Selection
     end
     
     # written for assignment #2
+    # not actually being used??
     def find_by(attribute, value)
-        output = []
-        connection.execute <<-SQL do |row|
-            SELECT #{columns.join ","} FROM #{table}
-            WHERE #{attribute} = #{value};
-        SQL
-            data = Hash[columns.zip(row)]
-            data_obj = new(data)
-            output << data_obj
-        end
-        output
+        # output = []
+        # connection.execute <<-SQL do |row|
+        #     SELECT #{columns.join ","} FROM #{table}
+        #     WHERE #{attribute} = #{value};
+        # SQL
+        #     data = Hash[columns.zip(row)]
+        #     data_obj = new(data)
+        #     output << data_obj
+        # end
+        # output
+        
+        # rows = connection.execute <<-SQL
+        #     SELECT #{columns.join ","}
+        #     FROM #{table}
+        #     WHERE #{attribute} = #{value}
+        # SQL
+        # rows_to_array(rows)
     end
     
     # written for assignment #3
