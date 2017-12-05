@@ -200,12 +200,19 @@ module Selection
         rows_to_array(rows)
     end
     
+    # function given in checkpoint, then expanded and refactored in assignment #4
     def order(*args)
-        if args.count > 1
-            order = args.join(",")
-        else
-            order = args.first.to_s
+        order = []
+        args.each do |arg|
+            if arg.is_a? Hash
+                term = arg.map{ |key, value| "#{key} #{value}" }.join(',')
+            else
+                term = arg 
+            end
+            order << term
         end
+        order = order.join(',')
+
         rows = connection.execute <<-SQL
             SELECT * FROM #{table}
             ORDER BY #{order};
