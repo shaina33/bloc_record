@@ -32,13 +32,22 @@ module Selection
         end
     end
     
-    # def find_by(attribute, value)
-    #     row = connection.get_first_row <<-SQL
-    #         SELECT #{column.join ","} FROM #{table}
-    #         WHERE #{attribute} = #{BlocRecord::Utility.sql_strings(value)};
-    #     SQL
-    #     init_object_from_row(row)
-    # end
+    def find_by(attribute, value)
+        row = connection.get_first_row <<-SQL
+            SELECT #{columns.join ","} FROM #{table}
+            WHERE #{attribute} = #{BlocRecord::Utility.sql_strings(value)};
+        SQL
+        init_object_from_row(row)
+    end
+    
+    # assignment 2
+    def find_many_by(attribute, value)
+        rows = connection.execute <<-SQL
+            SELECT #{columns.join ","} FROM #{table}
+            WHERE #{attribute} = #{BlocRecord::Utility.sql_strings(value)};
+        SQL
+        rows_to_array(rows)
+    end
     
     def take(num=1)
         if !check_integer(num, 1)
@@ -91,28 +100,6 @@ module Selection
         rows_to_array(rows)
     end
     
-    # written for assignment #2
-    # not actually being used??
-    def find_by(attribute, value)
-        # output = []
-        # connection.execute <<-SQL do |row|
-        #     SELECT #{columns.join ","} FROM #{table}
-        #     WHERE #{attribute} = #{value};
-        # SQL
-        #     data = Hash[columns.zip(row)]
-        #     data_obj = new(data)
-        #     output << data_obj
-        # end
-        # output
-        
-        # rows = connection.execute <<-SQL
-        #     SELECT #{columns.join ","}
-        #     FROM #{table}
-        #     WHERE #{attribute} = #{value}
-        # SQL
-        # rows_to_array(rows)
-    end
-    
     # written for assignment #3
     # returns True for integer of at least min, False otherwise
     # to be used for input validation
@@ -127,7 +114,7 @@ module Selection
         words = m.to_s.split('_')
         if words[0] === 'find' && words[1] === 'by'
             attribute = words[2]
-            value = *args[0]
+            value = args[0]
             find_by(attribute, value)
         else
             puts "Method not found."
@@ -136,7 +123,8 @@ module Selection
     end
     # iterate through entry records in 1 batch of entries
     # just chose a practical max batch size as the default
-    def find_each(start=1, batch_size=10000)
+    # when invoking with parameters, must use keyword names, ex. find_each(start: 2, batch_size: 10)
+    def find_each(start: 1, batch_size: 10000)
         if !(check_integer(start,1) && check_integer(batch_size,1))
             puts "Invalid arguments. Start and batch_size must be positive integers."
             return nil
@@ -147,15 +135,12 @@ module Selection
         end
         if start >= 0 && batch_size > 0
             rows = connection.execute <<-SQL
-                SELECT #{columns.push(count(id)).join ","} FROM #{table}
+                SELECT #{columns.join ","} FROM #{table}
                 ORDER BY id
-                OFFSET BY #{start}
-                LIMIT #{batch_size};
+                LIMIT #{batch_size}
+                OFFSET #{start};
             SQL
             entries = rows_to_array(rows)
-        end
-        if count(id) > 10000
-            puts "Only first 10,000 records returned. To access additional records, use find_in_batches()."
         end
         entries.each{ |e| yield e }
     end
@@ -165,27 +150,30 @@ module Selection
             rows = connection.execute <<-SQL
                 SELECT #{columns.join ","} FROM #{table}
                 ORDER BY id
-                OFFSET BY #{start}
-                LIMIT #{batch_size};
+                LIMIT #{batch_size}
+                OFFSET #{start};
             SQL
             return rows_to_array(rows)
         end
         
     end
     # iterate through batches of entry records
-    def find_in_batches(start=1, batch_size=10000)
+    def find_in_batches(start: 1, batch_size: 10000)
         if !(check_integer(start,1) && check_integer(batch_size,1))
             puts "Invalid arguments. Start and batch_size must be positive integers."
             return nil
         end
         batch_start = start
-        max = connection.execute <<-SQL
+        row = connection.execute <<-SQL
             SELECT count(id) FROM #{table};
         SQL
+        max = row[0][0]
+        batch_num = 1
         while batch_start < max
             batch = find_batch(batch_start, batch_size)
-            yield batch
+            yield batch, batch_num
             batch_start += batch_size
+            batch_num += 1
         end
     end
     # end Assignment #3
