@@ -31,6 +31,21 @@ module Persistence
         self.class.update(self.id, updates)
     end
     
+    # allows function calls such as entry_instance.update_name("James")
+    # assignment 5
+    def method_missing(m, *args)
+        words = m.to_s.split('_')
+        if words[0] === 'update'
+            words.shift
+            attribute = words.join("_")
+            value = args[0]
+            update_attribute(attribute, value)
+        else
+            #puts "Method #{m} not found. Using method_missing definition in persistance.rb."
+            return nil
+        end
+    end
+    
     module ClassMethods
         def create(attrs)
             attrs = BlocRecord::Utility.convert_keys(attrs)
@@ -46,23 +61,27 @@ module Persistence
         end
         
         def update(ids, updates)
-            updates = BlocRecord::Utility.convert_keys(updates)
-            updates.delete "id"
-            updates_array = updates.map { |key, value| "#{key}=#{BlocRecord::Utility.sql_strings(value)}" }
-            
-            if ids.class == Fixnum
-                where_clause = "WHERE id = #{ids};"
-            elsif ids.class == Array
-                where_clause = ids.empty? ? ";" : "WHERE id IN (#{ids.join(",")});"
-            else
-                where_clause = ";"
+            if updates.class == Hash
+                updates = BlocRecord::Utility.convert_keys(updates)
+                updates.delete "id"
+                updates_array = updates.map { |key, value| "#{key}=#{BlocRecord::Utility.sql_strings(value)}" }
+                
+                if ids.class == Fixnum
+                    where_clause = "WHERE id = #{ids};"
+                elsif ids.class == Array
+                    where_clause = ids.empty? ? ";" : "WHERE id IN (#{ids.join(",")});"
+                else
+                    where_clause = ";"
+                end
+                
+                connection.execute <<-SQL
+                    UPDATE #{table}
+                    SET #{updates_array * ","} #{where_clause}
+                SQL
+                true
+            elsif updates.class == Array # assignment 5
+                ids.each_with_index{ |id, index| update(id, updates[index]) }
             end
-            
-            connection.execute <<-SQL
-                UPDATE #{table}
-                SET #{updates_array * ","} #{where_clause}
-            SQL
-            true
         end
         
         def update_all(updates)

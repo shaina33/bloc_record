@@ -191,6 +191,7 @@ module Selection
                 expression = expression_hash.map {|key, value| "#{key}=#{BlocRecord::Utility.sql_strings(value)}"}.join(" and ")
             end
         end
+        # puts "table is: #{table}"
         sql = <<-SQL
             SELECT #{columns.join ","} FROM #{table}
             WHERE #{expression};
@@ -237,16 +238,24 @@ module Selection
                     SELECT * FROM #{table}
                     INNER JOIN #{args.first} ON #{args.first}.#{table}_id = #{table}.id
                 SQL
-            when Hash # assignment 4
+            when Hash # assignment 4, does not support irregular plurals, such as 'entries'
                 joins_hash = BlocRecord::Utility.convert_keys(args.first)
-                joins = joins_hash.map {|key, value| "INNER JOIN #{key} ON #{key}.#{table}_id = #{table}.id INNER JOIN #{value} ON #{value}.#{key}_id = #{key}.id" }
+                # note: key is chopped in mapping because must be adjusted for plural, and hash keys are immutable
+                joins_clause = joins_hash.map {|key, value| "INNER JOIN #{joins_hash.keys[0].chop} ON #{joins_hash.keys[0].chop}.#{table}_id = #{table}.id INNER JOIN #{value} ON #{value}.#{joins_hash.keys[0].chop}_id = #{joins_hash.keys[0].chop}.id" }.join
+                sql_query = "SELECT * FROM #{table} #{joins_clause}"
+                puts sql_query
                 rows = connection.execute <<-SQL
-                    SELECT * FROM #{table}
-                    #{joins}
+                    #{sql_query}
                 SQL
             end
         end
         rows_to_array(rows)
+    end
+    
+    def rows_to_array(rows)
+        collection = BlocRecord::Collection.new
+        rows.each { |row| collection << new(Hash[columns.zip(row)]) }
+        collection
     end
     
     private
@@ -257,10 +266,6 @@ module Selection
         end
     end
     
-    def rows_to_array(rows)
-        collection = BlocRecord::Collection.new
-        rows.each { |row| collection << new(Hash[columns.zip(row)]) }
-        collection
-    end
+
     
 end
