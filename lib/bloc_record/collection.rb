@@ -9,14 +9,6 @@ module BlocRecord
             self.any? ? self.first.class.update(ids, updates) : false
         end
         
-        # copied from selection.rb private methods, added parameter for class
-        # def rows_to_array(rows, class_for_columns)
-        #     columns = class_for_columns.columns
-        #     collection = BlocRecord::Collection.new
-        #     rows.each { |row| collection << new(Hash[columns.zip(row)]) }
-        #     collection
-        # end
-        
         def take 
             self[0]
         end
@@ -43,6 +35,11 @@ module BlocRecord
         
         def not(args_hash)
             where(args_hash, true)
+        end
+        
+        def destroy_all
+            ids = self.map(&:id)
+            self.first.class.destroy(*ids)
         end
         
     end
