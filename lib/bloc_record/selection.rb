@@ -1,4 +1,5 @@
 require 'sqlite3'
+require 'pg'
 
 module Selection
     def find_one(id)

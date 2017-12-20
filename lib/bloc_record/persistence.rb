@@ -1,4 +1,5 @@
 require 'sqlite3'
+require 'pg'
 require 'bloc_record/schema'
 
 module Persistence
